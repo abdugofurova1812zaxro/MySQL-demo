@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ism qoldiring</title>
+<style>
+  body { font-family: sans-serif; max-width: 480px; margin: 40px auto; padding: 0 16px; }
+  input, button { font-size: 16px; padding: 10px; }
+  button { background: #2b6cb0; color: #fff; border: 0; border-radius: 6px; }
+  li { margin: 8px 0; }
+</style>
+</head>
+<body>
+<h1>Ismingizni qoldiring</h1>
+<form id="f">
+  <input id="name" placeholder="Ism" required>
+  <button type="submit">Saqlash</button>
+</form>
+<ul id="list"></ul>
+<script>
+async function yukla() {
+  const r = await fetch('/.netlify/functions/api');
+  const data = await r.json();
+  document.getElementById('list').innerHTML =
+    data.map(n => `<li>${n.name}</li>`).join('');
+}
+document.getElementById('f').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = document.getElementById('name').value;
+  await fetch('/.netlify/functions/api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  document.getElementById('name').value = '';
+  yukla();
+});
+yukla();
+</script>
+</body>
+</html>
