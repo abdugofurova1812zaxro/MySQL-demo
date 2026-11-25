@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ Sehrli Sayyora ✨</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, sans-serif;
+    background: linear-gradient(180deg, #0f0c4a 0%, #3b2a7a 55%, #6b3fa0 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 24px 16px;
+    color: #fff;
+  }
+  .yulduz { position: fixed; color: #ffd76e; animation: yorqin 2s infinite alternate; pointer-events: none; }
+  @keyframes yorqin { from { opacity: .4; } to { opacity: 1; } }
+  .card {
+    max-width: 520px; margin: 0 auto;
+    background: rgba(255,255,255,.12);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 20px;
+    padding: 28px 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  }
+  h1 {
+    font-size: 26px; margin: 0 0 6px; text-align: center;
+    text-shadow: 0 0 12px rgba(255,215,110,.8);
+  }
+  .pastgi { text-align: center; color: #ffd76e; margin: 0 0 18px; font-size: 15px; }
+  form { display: flex; gap: 8px; }
+  input {
+    flex: 1; font-size: 16px; padding: 12px;
+    border: 1px solid rgba(255,255,255,.4); border-radius: 10px;
+    outline: none; background: rgba(255,255,255,.9); color: #2d3748;
+  }
+  button {
+    font-size: 16px; padding: 12px 22px; border: 0; border-radius: 10px;
+    background: linear-gradient(135deg, #ffd76e, #ff9a56);
+    color: #4a2d0a; font-weight: 700; cursor: pointer;
+  }
+  button:active { transform: scale(.96); }
+  #msg { margin: 10px 0 4px; min-height: 20px; font-size: 15px; }
+  .ok { color: #9fffc1; }
+  .err { color: #ffb3b3; }
+  ul { list-style: none; padding: 0; margin: 14px 0 0; }
+  li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.15);
+  }
+  li:last-child { border-bottom: 0; }
+  img.ava {
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+    background: #fff; border: 2px solid #ffd76e;
+  }
+  .matn { flex: 1; }
+  .ism { font-weight: 700; }
+  .vaqt { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div id="yulduzlar"></div>
+<div class="card">
+  <h1>✨ Sehrli Sayyora ✨</h1>
+  <p class="pastgi">🪐 Sayyoramizga ismingizni qoldiring</p>
+  <form id="f">
+    <input id="name" placeholder="Ismingizni yozing..." required>
+    <button type="submit">Yuborish 🚀</button>
+  </form>
+  <div id="msg"></div>
+  <ul id="list"></ul>
+</div>
+<script>
+const API = '/.netlify/functions/api/notes';
+
+// Yulduzchalarni tarqatamiz
+(function () {
+  const el = document.getElementById('yulduzlar');
+  const belgilar = ['✦', '✧', '⭐', '🌟', '🪐', '🌙'];
+  for (let i = 0; i < 24; i++) {
+    const s = document.createElement('span');
+    s.className = 'yulduz';
+    s.textContent = belgilar[i % belgilar.length];
+    s.style.left = Math.random() * 95 + '%';
+    s.style.top = Math.random() * 90 + '%';
+    s.style.fontSize = (12 + Math.random() * 18) + 'px';
+    s.style.animationDelay = (Math.random() * 2) + 's';
+    el.appendChild(s);
+  }
+})();
+
+// Ismga mos multfilm avatar (DiceBear xizmatidan)
+function avatar(name) {
+  const urug = encodeURIComponent(name);
+  return 'https://api.dicebear.com/9.x/adventurer/svg?seed=' + urug + '&backgroundColor=b6e3f4,c0aede,ffd5dc,d1f4d9';
+}
+
+function vaqtQil(s) {
+  const x = String(s);
+  const d = new Date(x.includes('T') ? x : x.replace(' ', 'T') + 'Z');
+  const p = n => String(n).padStart(2, '0');
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}, ` +
+         `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+async function yukla() {
+  try {
+    const r = await fetch(API);
+    const data = await r.json();
+    document.getElementById('list').innerHTML =
+      data.map(n => `
+        <li>
+          <img class="ava" src="${avatar(n.name)}" alt="">
+          <div class="matn">
+            <div class="ism">${n.name}</div>
+            <div class="vaqt">${vaqtQil(n.created_at)}</div>
+          </div>
+        </li>`).join('');
+  } catch (e) {
+    show('O\'qishda xato: ' + e.message, 'err');
+  }
+}
+
+function show(text, cls) {
+  const m = document.getElementById('msg');
+  m.textContent = text;
+  m.className = cls;
+}
+
+document.getElementById('f').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = document.getElementById('name').value;
+  try {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok) {
+      show('Sayyoraga qo\'shildi ✓', 'ok');
+      document.getElementById('name').value = '';
+      yukla();
+    } else {
+      show('Saqlashda xato (' + r.status + '): ' + (data.error || 'noma\'lum'), 'err');
+    }
+  } catch (e) {
+    show('Ulanish xatosi: ' + e.message, 'err');
+  }
+});
+yukla();
+</script>
+</body>
+</html>
